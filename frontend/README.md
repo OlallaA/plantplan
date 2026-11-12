@@ -1,12 +1,15 @@
 # Frontend de PlantPlan
 
 Panel en React, Vite y Tailwind CSS. El banco, las fichas, el semillero y las tarjetas
-de cultivos se conectan a Spring Boot con la cuenta autenticada. Los recordatorios
+de cultivos se conectan a Spring Boot con la cuenta autenticada. El catálogo es
+público y el tiempo se carga para los huertos con coordenadas. Los recordatorios
 del panel usan datos de ejemplo.
 
 ## Instalar y arrancar
 
-Desde la raíz del repositorio:
+La [guía de instalación de PlantPlan](../README.md) explica cómo arrancar la
+aplicación completa con Docker Compose o preparar MySQL, Spring Boot y Vite
+para desarrollo. Para trabajar solo con el frontend, desde la raíz:
 
 ```powershell
 cd frontend
@@ -19,10 +22,6 @@ el puerto está ocupado, en lugar de cambiarlo silenciosamente. También se pued
 usar `http://localhost:5173/`. Para abrir el banco, inicia MySQL y Spring Boot y
 entra con una cuenta existente. Vite reenvía `/api` a `http://127.0.0.1:8080`.
 Si Spring Boot usa otro puerto, define `PLANTPLAN_API_TARGET` antes de iniciar Vite.
-
-Para cargar dos cuentas ficticias con su propio banco de semillas, ejecuta
-`.\scripts\seed-demo.ps1` desde la raíz del repositorio con Spring Boot y MySQL
-arrancados. El script muestra los correos y las contraseñas al terminar.
 
 Requiere Node >=22.12; probado con Node 24.18.0 y npm 11.16.0. El lockfile fija
 la instalación probada. No se necesitan dependencias globales.
@@ -83,7 +82,7 @@ frontend/
 
 Tailwind resuelve la cuadrícula principal y utilidades de distribución. CSS
 complementa la estantería, sobres, tierra, paleta, estados y reglas responsive.
-Se usan fuentes del sistema y Georgia, sin descargar fuentes ni imágenes.
+Se usan fuentes del sistema y una copia local de Nunito.
 La navegación del banco usa el historial del navegador y las peticiones usan
 `fetch`. ESLint y sus plugins son dependencias de desarrollo.
 
@@ -109,11 +108,14 @@ o crean una ficha básica en la misma operación.
 Los sobres de ejemplo conservan su foco y nombre accesible. Los sobres del banco
 real abren la ficha asociada. Los catálogos contienen los textos en ambos idiomas.
 
-Límites: seis sobres, tres recordatorios, dos huertos resumidos y 24 plantas
-dibujadas en total en la sección Huerto. El presupuesto se reparte entre huertos
-visibles. Germinación y planteles tienen doce dibujos como máximo por apartado.
-Cada cantidad completa sigue disponible en texto; los excedentes se indican.
-Las cantidades pequeñas conservan un dibujo por planta, sin multiplicadores.
+El panel resume hasta seis sobres, tres recordatorios y dos huertos. Cada
+cultivo del huerto muestra hasta doce dibujos. Las cantidades completas y
+los excedentes se indican en texto.
+
+El semillero representa la primera semana con semillas en bandejas y los
+lotes más antiguos con brotes genéricos. Los lotes sin fecha se muestran como
+brotes. El huerto del panel muestra el tiempo de hoy y la vista completa ofrece
+siete días de previsión. La escena del huerto se actualiza cada cinco minutos.
 
 ## Backend revisado y límites de integración
 
@@ -131,6 +133,7 @@ Los controladores ofrecen:
 | Área | Endpoints comprobados |
 | --- | --- |
 | Autenticación | POST `/api/auth/register`, POST `/api/auth/login` |
+| Catálogo | GET `/api/catalog` |
 | Huertos | CRUD `/api/gardens`, `/api/gardens/{id}`; GET `/api/users/{userId}/gardens` |
 | Fichas | CRUD `/api/crop-sheets`, `/api/crop-sheets/{id}`; GET `/api/users/{userId}/crop-sheets` |
 | Semillas | CRUD `/api/seeds`, `/api/seeds/{id}`; GET `/api/crop-sheets/{cropSheetId}/seeds` |
@@ -144,23 +147,18 @@ Los controladores ofrecen:
 CRUD significa GET/POST sobre la colección y GET/PUT/DELETE sobre el identificador.
 Login devuelve `token` y `user`; las rutas protegidas reciben Bearer JWT.
 
-No existe entidad/controlador de bandejas o semilleros independientes.
-`SeedlingResponse` contiene cantidades y fechas, pero no estado de germinación.
-La separación visual entre germinación y planteles es solo una fixture, acordada
-para esta fase. No se infiere un estado por el paso del tiempo.
+Las bandejas del semillero representan lotes de `SeedlingResponse` y usan la
+fecha de siembra como referencia visual. El banco combina `SeedResponse` con
+los datos de la ficha. El huerto usa `CropResponse.currentQuantity` para
+mostrar las plantas disponibles. La ficha permite ajustar las cantidades
+de los tres tipos de registro y conserva el historial de siembra y plantación.
+`ReminderResponse` usa los campos `tipo` y `estado`.
 
-`SeedResponse` aporta `quantity`, `cropSheetId` y `cropSheetName`, sin ilustración
-o variedad separada; esa presentación necesitará composición con las fichas.
-`CropResponse.initialQuantity` no se interpreta como un stock actual calculado
-restando cosechas. Las cantidades dibujadas aquí son fixtures de plantas.
-`ReminderResponse` usa `tipo` y `estado`, no `type` y `status`. Los datos de
-presentación no pretenden ser respuestas de esos endpoints.
-
-## Verificación de esta fase
+## Verificación de la interfaz
 
 - `npm run lint`: pasa, sin avisos.
-- `npm test`: tres pruebas pasan (cantidades pequeñas, exceso de ilustraciones,
-  inmutabilidad de entrada y estados vacíos/presupuesto cero).
+- `npm test`: comprueba cantidades e ilustraciones, el cambio de etapa del
+  semillero, los efectos del tiempo y la paridad de las traducciones.
 - `npm run build`: pasa.
 - Servidor Vite: HTTP 200 y navegador sin errores/avisos en consola observados.
 - Reflow: 320, 390, 768, 1024 y 1440 px sin desbordamiento horizontal en la vista
@@ -175,7 +173,7 @@ presentación no pretenden ser respuestas de esos endpoints.
   composición de fondos: sin valores por debajo de 4.5:1 para texto normal o
   3:1 para texto grande tras ajustar tonos. Los degradados se aproximaron con
   un tono de fondo conservador; esto no sustituye una auditoría formal.
-- Preferencia de movimiento reducido respetada; no hay animaciones.
+- Los efectos meteorológicos respetan la preferencia de movimiento reducido.
 
 Pendientes: lector de pantalla real (NVDA/VoiceOver), zoom real al 200/400 %, otras
 combinaciones de navegador/dispositivo y auditoría WCAG 2.2 AA completa. No se

@@ -11,10 +11,12 @@ $accounts = @(
     @{
         Email = 'demo.horta@example.test'; Password = 'PlantPlan-Demo-Horta!2026'; Name = 'Demo Horta'
         Garden = 'Horta da casa (demo)'; Crop = 'Tomate cherry'; Variety = 'Doce italiano'; Quantity = 30
+        Latitude = 42.8805; Longitude = -8.5457
     },
     @{
         Email = 'demo.escola@example.test'; Password = 'PlantPlan-Demo-Escola!2026'; Name = 'Demo Escola'
         Garden = 'Horta da escola (demo)'; Crop = 'Leituga'; Variety = 'Marabilla de veran'; Quantity = 60
+        Latitude = 43.3623; Longitude = -8.4115
     }
 )
 
@@ -56,7 +58,7 @@ foreach ($account in $accounts) {
 
     $token = $session.token
     $garden = Get-OrCreateResource '/gardens' $token { $_.name -eq $account.Garden } @{
-        name = $account.Garden
+        name = $account.Garden; latitude = $account.Latitude; longitude = $account.Longitude
     }
     $sheet = Get-OrCreateResource '/crop-sheets' $token { $_.name -eq $account.Crop -and $_.variety -eq $account.Variety } @{
         name = $account.Crop; variety = $account.Variety; wateringFrequencyDays = 2
