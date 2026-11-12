@@ -11,6 +11,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 @Entity
 @Table(name = "crops")
@@ -22,6 +23,7 @@ public class Crop {
 
     @Column(nullable = false)
     private Integer initialQuantity;
+    private Integer lostQuantity;
 
     private LocalDate transplantDate;
     private Integer harvestedQuantity;
@@ -50,6 +52,14 @@ public class Crop {
 
     public void setInitialQuantity(Integer initialQuantity) {
         this.initialQuantity = initialQuantity;
+    }
+
+    public int getCurrentQuantity() {
+        return Math.max(0, initialQuantity - Objects.requireNonNullElse(lostQuantity, 0));
+    }
+
+    public void recordLoss(int quantity) {
+        lostQuantity = Objects.requireNonNullElse(lostQuantity, 0) + quantity;
     }
 
     public LocalDate getTransplantDate() {

@@ -9,6 +9,7 @@ public record CurrentWeatherResponse(
         Double precipitationMm,
         Integer weatherCode,
         String weatherDescription,
-        Double windSpeedKmh
+        Double windSpeedKmh,
+        Boolean daylight
 ) {
 }

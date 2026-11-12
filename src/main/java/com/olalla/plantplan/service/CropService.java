@@ -1,6 +1,9 @@
 package com.olalla.plantplan.service;
 
+import com.olalla.plantplan.dto.QuantityAdjustmentRequest;
 import com.olalla.plantplan.dto.CropCreateRequest;
+import com.olalla.plantplan.dto.CropEntryRequest;
+import com.olalla.plantplan.dto.CropEntryResponse;
 import com.olalla.plantplan.dto.CropResponse;
 import com.olalla.plantplan.dto.CropUpdateRequest;
 import com.olalla.plantplan.entity.Crop;
@@ -9,29 +12,29 @@ import com.olalla.plantplan.entity.Garden;
 import com.olalla.plantplan.exception.ForbiddenException;
 import com.olalla.plantplan.exception.ResourceNotFoundException;
 import com.olalla.plantplan.repository.CropRepository;
-import com.olalla.plantplan.repository.CropSheetRepository;
 import com.olalla.plantplan.repository.GardenRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
 public class CropService {
 
     private final CropRepository cropRepository;
-    private final CropSheetRepository cropSheetRepository;
+    private final CropSheetService cropSheetService;
     private final GardenRepository gardenRepository;
     private final ReminderService reminderService;
 
     public CropService(
             CropRepository cropRepository,
-            CropSheetRepository cropSheetRepository,
+            CropSheetService cropSheetService,
             GardenRepository gardenRepository,
             ReminderService reminderService
     ) {
         this.cropRepository = cropRepository;
-        this.cropSheetRepository = cropSheetRepository;
+        this.cropSheetService = cropSheetService;
         this.gardenRepository = gardenRepository;
         this.reminderService = reminderService;
     }
@@ -54,7 +57,7 @@ public class CropService {
 
     @Transactional(readOnly = true)
     public List<CropResponse> findByCropSheetId(Long userId, Long cropSheetId) {
-        findOwnedCropSheet(userId, cropSheetId);
+        cropSheetService.findOwnedEntity(userId, cropSheetId);
 
         return cropRepository.findByCropSheetId(cropSheetId).stream()
                 .map(this::toResponse)
@@ -68,9 +71,22 @@ public class CropService {
 
     @Transactional
     public CropResponse create(Long userId, CropCreateRequest request) {
-        CropSheet cropSheet = findOwnedCropSheet(userId, request.cropSheetId());
+        CropSheet cropSheet = cropSheetService.findOwnedEntity(userId, request.cropSheetId());
         Garden garden = findOwnedGarden(userId, request.gardenId());
+        return create(cropSheet, garden, request);
+    }
 
+    @Transactional
+    public CropEntryResponse registerPlanting(Long userId, CropEntryRequest request) {
+        CropSheet sheet = cropSheetService.findOrCreateByName(userId, request.name(), request.variety(),
+                request.catalogId(), request.catalogLanguage());
+        Garden garden = findOwnedGarden(userId, request.gardenId());
+        CropResponse crop = create(sheet, garden, new CropCreateRequest(request.quantity(), LocalDate.now(),
+                null, null, null, sheet.getId(), garden.getId()));
+        return new CropEntryResponse(crop, cropSheetService.toResponse(sheet));
+    }
+
+    private CropResponse create(CropSheet cropSheet, Garden garden, CropCreateRequest request) {
         Crop crop = new Crop();
         applyRequest(
                 crop,
@@ -90,8 +106,9 @@ public class CropService {
 
     @Transactional
     public CropResponse update(Long userId, Long id, CropUpdateRequest request) {
+        cropSheetService.lockUser(userId);
         Crop crop = findOwnedEntity(userId, id);
-        CropSheet cropSheet = findOwnedCropSheet(userId, request.cropSheetId());
+        CropSheet cropSheet = cropSheetService.findOwnedEntity(userId, request.cropSheetId());
         Garden garden = findOwnedGarden(userId, request.gardenId());
 
         applyRequest(
@@ -110,7 +127,19 @@ public class CropService {
     }
 
     @Transactional
+    public CropResponse adjustQuantity(Long userId, Long id, QuantityAdjustmentRequest request) {
+        cropSheetService.lockUser(userId);
+        Crop crop = findOwnedEntity(userId, id);
+        int current = crop.getCurrentQuantity();
+        request.validateAgainst(current);
+        crop.recordLoss(current - request.quantity());
+        reminderService.generateForCrop(crop);
+        return toResponse(crop);
+    }
+
+    @Transactional
     public void delete(Long userId, Long id) {
+        cropSheetService.lockUser(userId);
         Crop crop = findOwnedEntity(userId, id);
         reminderService.deleteForCrop(id);
         cropRepository.delete(crop);
@@ -145,18 +174,6 @@ public class CropService {
         return crop;
     }
 
-    private CropSheet findOwnedCropSheet(Long userId, Long cropSheetId) {
-        CropSheet cropSheet = findCropSheetById(cropSheetId);
-
-        if (!cropSheet.getUser().getId().equals(userId)) {
-            throw new ForbiddenException(
-                    "No puedes acceder a la ficha de cultivo con id " + cropSheetId
-            );
-        }
-
-        return cropSheet;
-    }
-
     private Garden findOwnedGarden(Long userId, Long gardenId) {
         Garden garden = findGardenById(gardenId);
 
@@ -170,11 +187,6 @@ public class CropService {
     private Crop findEntityById(Long id) {
         return cropRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No existe un cultivo con id " + id));
-    }
-
-    private CropSheet findCropSheetById(Long id) {
-        return cropSheetRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("No existe una ficha de cultivo con id " + id));
     }
 
     private Garden findGardenById(Long id) {
@@ -196,7 +208,8 @@ public class CropService {
                 cropSheet.getId(),
                 cropSheet.getName(),
                 garden.getId(),
-                garden.getName()
+                garden.getName(),
+                crop.getCurrentQuantity()
         );
     }
 }

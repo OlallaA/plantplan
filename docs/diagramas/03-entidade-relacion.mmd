@@ -1,0 +1,95 @@
+---
+title: PlantPlan · Diagrama entidade–relación derivado de JPA
+---
+erDiagram
+    direction TB
+
+    users {
+        BIGINT id PK
+        VARCHAR(255) name "NOT NULL"
+        VARCHAR(255) email UK "NOT NULL"
+        VARCHAR(255) password "NOT NULL"
+        ENUM role "NOT NULL"
+    }
+
+    gardens {
+        BIGINT id PK
+        VARCHAR(255) name "NOT NULL"
+        VARCHAR(255) location
+        FLOAT(53) latitude
+        FLOAT(53) longitude
+        BIGINT user_id FK "NOT NULL"
+    }
+
+    crop_sheets {
+        BIGINT id PK
+        VARCHAR(255) name "NOT NULL"
+        VARCHAR(255) variety
+        ENUM sowing_start_month
+        ENUM sowing_end_month
+        ENUM transplant_start_month
+        ENUM transplant_end_month
+        ENUM harvest_start_month
+        ENUM harvest_end_month
+        INTEGER watering_frequency_days
+        ENUM sun_exposure
+        TEXT notes
+        BIGINT user_id FK "NOT NULL"
+    }
+
+    seeds {
+        BIGINT id PK
+        INTEGER quantity "NOT NULL"
+        TEXT notes
+        BIGINT crop_sheet_id FK "NOT NULL"
+    }
+
+    seedlings {
+        BIGINT id PK
+        INTEGER sown_quantity "NOT NULL"
+        DATE sowing_date
+        INTEGER transplanted_quantity
+        DATE transplant_date
+        TEXT notes
+        BIGINT crop_sheet_id FK "NOT NULL"
+    }
+
+    crops {
+        BIGINT id PK
+        INTEGER initial_quantity "NOT NULL"
+        DATE transplant_date
+        INTEGER harvested_quantity
+        DATE end_date
+        TEXT notes
+        BIGINT crop_sheet_id FK "NOT NULL"
+        BIGINT garden_id FK "NOT NULL"
+    }
+
+    reminders {
+        BIGINT id PK
+        ENUM type "NOT NULL"
+        ENUM status "NOT NULL"
+        DATE scheduled_date "NOT NULL"
+        DATETIME(6) completed_at
+        VARCHAR(255) title "NOT NULL"
+        TEXT description
+        BIGINT user_id FK "NOT NULL"
+        BIGINT crop_sheet_id FK
+        BIGINT seed_id FK
+        BIGINT seedling_id FK
+        BIGINT crop_id FK
+        BIGINT garden_id FK
+    }
+
+    users ||..o{ gardens : "é titular de"
+    users ||..o{ crop_sheets : "é titular de"
+    users ||..o{ reminders : "é titular de"
+    gardens ||..o{ crops : "contén"
+    crop_sheets ||..o{ seeds : "clasifica"
+    crop_sheets ||..o{ seedlings : "clasifica"
+    crop_sheets ||..o{ crops : "describe"
+    crop_sheets |o..o{ reminders : "contextualiza"
+    seeds |o..o{ reminders : "contextualiza"
+    seedlings |o..o{ reminders : "contextualiza"
+    crops |o..o{ reminders : "contextualiza"
+    gardens |o..o{ reminders : "contextualiza"

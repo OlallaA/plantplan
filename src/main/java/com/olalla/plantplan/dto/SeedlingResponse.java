@@ -10,6 +10,7 @@ public record SeedlingResponse(
         LocalDate transplantDate,
         String notes,
         Long cropSheetId,
-        String cropSheetName
+        String cropSheetName,
+        int remainingQuantity
 ) {
 }

@@ -130,6 +130,11 @@ public class ReminderService {
 
     @Transactional
     public void generateForSeed(Seed seed) {
+        if (seed.getQuantity() <= 0) {
+            reminderRepository.findBySeedIdAndTypeInAndStatus(seed.getId(), SOWING_TYPES, ReminderStatus.PENDING)
+                    .forEach(reminder -> reminder.setStatus(ReminderStatus.CANCELLED));
+            return;
+        }
         generateSowingForSeed(seed, LocalDate.now().getYear());
         generateSowingForSeed(seed, LocalDate.now().getYear() + 1);
     }
@@ -146,10 +151,6 @@ public class ReminderService {
 
     @Transactional
     public void generateForCrop(Crop crop) {
-        if (crop.getEndDate() != null && !crop.getEndDate().isAfter(LocalDate.now())) {
-            cancelPendingCrop(crop.getId());
-            return;
-        }
         ensureNextWatering(crop);
     }
 
@@ -196,6 +197,7 @@ public class ReminderService {
     }
 
     private void generateSowingForSeed(Seed seed, int year) {
+        if (seed.getQuantity() <= 0) return;
         CropSheet ficha = seed.getCropSheet();
         Month mesInicio = ficha.getSowingStartMonth();
         Month mesFin = ficha.getSowingEndMonth();
@@ -280,6 +282,11 @@ public class ReminderService {
     }
 
     private void ensureNextWatering(Crop crop) {
+        if (crop.getCurrentQuantity() == 0
+                || (crop.getEndDate() != null && !crop.getEndDate().isAfter(LocalDate.now()))) {
+            cancelPendingCrop(crop.getId());
+            return;
+        }
         CropSheet ficha = crop.getCropSheet();
         Integer frecuencia = ficha.getWateringFrequencyDays();
         LocalDate transplantDate = crop.getTransplantDate();
@@ -287,11 +294,6 @@ public class ReminderService {
         if (frecuencia == null || frecuencia <= 0 || transplantDate == null) {
             return;
         }
-        if (crop.getEndDate() != null && !crop.getEndDate().isAfter(LocalDate.now())) {
-            cancelPendingCrop(crop.getId());
-            return;
-        }
-
         if (reminderRepository.existsByCropIdAndTypeAndStatus(
                 crop.getId(),
                 ReminderType.WATERING,
@@ -339,7 +341,7 @@ public class ReminderService {
     private void createNextWatering(Crop crop, LocalDate fechaUltimoRiego) {
         CropSheet ficha = crop.getCropSheet();
         Integer frecuencia = ficha.getWateringFrequencyDays();
-        if (frecuencia == null || frecuencia <= 0) {
+        if (crop.getCurrentQuantity() == 0 || frecuencia == null || frecuencia <= 0) {
             return;
         }
 
@@ -421,16 +423,7 @@ public class ReminderService {
     }
 
     private boolean seedlingPendingTransplant(Seedling seedling) {
-        if (seedling.getTransplantDate() != null
-                && seedling.getTransplantedQuantity() != null
-                && seedling.getSownQuantity() != null
-                && seedling.getTransplantedQuantity() >= seedling.getSownQuantity()) {
-            return false;
-        }
-        return seedling.getTransplantDate() == null
-                || seedling.getTransplantedQuantity() == null
-                || seedling.getSownQuantity() == null
-                || seedling.getTransplantedQuantity() < seedling.getSownQuantity();
+        return seedling.getRemainingQuantity() > 0;
     }
 
     private void cancelRelatedPending(List<Reminder> pendientes, Long idActual) {

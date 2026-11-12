@@ -12,6 +12,7 @@ public record CropResponse(
         Long cropSheetId,
         String cropSheetName,
         Long gardenId,
-        String gardenName
+        String gardenName,
+        int currentQuantity
 ) {
 }

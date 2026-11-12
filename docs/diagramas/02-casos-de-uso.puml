@@ -1,0 +1,52 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam nodesep 9
+skinparam ranksep 18
+left to right direction
+
+actor "Persoa visitante" as Visitor
+actor "Persoa usuaria\n(USER)" as Member
+actor "Persoa administradora\n(ADMIN)" as Admin
+actor "Open-Meteo" as WeatherProvider <<servizo externo>>
+
+rectangle "PlantPlan · API" {
+    package "Acceso" {
+        usecase "Rexistrar unha conta" as Register
+        usecase "Iniciar sesión" as Login
+    }
+
+    package "Conta" {
+        usecase "Xestionar a conta propia" as Account
+        usecase "Listar contas rexistradas" as ListAccounts
+    }
+
+    package "Planificación da horta" {
+        usecase "Xestionar hortas" as ManageGardens
+        usecase "Xestionar fichas de cultivo" as ManageCropSheets
+        usecase "Xestionar cultivos" as ManageCrops
+        usecase "Xestionar sementes" as ManageSeeds
+        usecase "Xestionar rexistros\nde sementeiros" as ManageSeedlings
+    }
+
+    package "Seguimento" {
+        usecase "Consultar e completar\nrecordatorios" as ManageReminders
+        usecase "Consultar o tempo da horta" as ViewWeather
+    }
+}
+
+Visitor -- Register
+Visitor -- Login
+Member <|-- Admin
+Member -- Account
+Admin -- ListAccounts
+Member -- ManageGardens
+Member -- ManageCropSheets
+Member -- ManageCrops
+Member -- ManageSeeds
+Member -- ManageSeedlings
+Member -- ManageReminders
+Member -- ViewWeather
+ViewWeather -- WeatherProvider
+@enduml

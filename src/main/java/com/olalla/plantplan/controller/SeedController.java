@@ -1,7 +1,11 @@
 package com.olalla.plantplan.controller;
 
+import com.olalla.plantplan.dto.QuantityAdjustmentRequest;
 import com.olalla.plantplan.dto.SeedCreateRequest;
 import com.olalla.plantplan.dto.SeedResponse;
+import com.olalla.plantplan.dto.SeedStockAdditionRequest;
+import com.olalla.plantplan.dto.SeedStockRequest;
+import com.olalla.plantplan.dto.SeedStockResponse;
 import com.olalla.plantplan.dto.SeedUpdateRequest;
 import com.olalla.plantplan.security.AuthenticatedUser;
 import com.olalla.plantplan.service.SeedService;
@@ -60,6 +64,23 @@ public class SeedController {
         return seedService.create(user.id(), request);
     }
 
+    @PostMapping("/seeds/stock")
+    public SeedStockResponse addStock(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @Valid @RequestBody SeedStockRequest request
+    ) {
+        return seedService.addStock(user.id(), request);
+    }
+
+    @PostMapping("/crop-sheets/{cropSheetId}/seeds/stock")
+    public SeedResponse addStockToSheet(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long cropSheetId,
+            @Valid @RequestBody SeedStockAdditionRequest request
+    ) {
+        return seedService.addStockToSheet(user.id(), cropSheetId, request.quantity());
+    }
+
     @PutMapping("/seeds/{id}")
     public SeedResponse update(
             @AuthenticationPrincipal AuthenticatedUser user,
@@ -67,6 +88,15 @@ public class SeedController {
             @Valid @RequestBody SeedUpdateRequest request
     ) {
         return seedService.update(user.id(), id, request);
+    }
+
+    @PutMapping("/seeds/{id}/quantity")
+    public SeedResponse adjustQuantity(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long id,
+            @Valid @RequestBody QuantityAdjustmentRequest request
+    ) {
+        return seedService.adjustQuantity(user.id(), id, request);
     }
 
     @DeleteMapping("/seeds/{id}")

@@ -1,8 +1,15 @@
 package com.olalla.plantplan.controller;
 
+import com.olalla.plantplan.dto.QuantityAdjustmentRequest;
 import com.olalla.plantplan.dto.SeedlingCreateRequest;
+import com.olalla.plantplan.dto.SeedlingEntryRequest;
+import com.olalla.plantplan.dto.SeedlingEntryResponse;
 import com.olalla.plantplan.dto.SeedlingResponse;
 import com.olalla.plantplan.dto.SeedlingUpdateRequest;
+import com.olalla.plantplan.dto.SowRequest;
+import com.olalla.plantplan.dto.SowResponse;
+import com.olalla.plantplan.dto.TransplantRequest;
+import com.olalla.plantplan.dto.TransplantResponse;
 import com.olalla.plantplan.security.AuthenticatedUser;
 import com.olalla.plantplan.service.SeedlingService;
 import jakarta.validation.Valid;
@@ -60,6 +67,27 @@ public class SeedlingController {
         return seedlingService.create(user.id(), request);
     }
 
+    @PostMapping("/seedlings/entry")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SeedlingEntryResponse registerPlantlets(@AuthenticationPrincipal AuthenticatedUser user,
+                                                  @Valid @RequestBody SeedlingEntryRequest request) {
+        return seedlingService.registerPlantlets(user.id(), request);
+    }
+
+    @PostMapping("/crop-sheets/{cropSheetId}/sow")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SowResponse sow(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable Long cropSheetId,
+                           @Valid @RequestBody SowRequest request) {
+        return seedlingService.sow(user.id(), cropSheetId, request);
+    }
+
+    @PostMapping("/seedlings/{id}/transplant")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TransplantResponse transplant(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable Long id,
+                                         @Valid @RequestBody TransplantRequest request) {
+        return seedlingService.transplant(user.id(), id, request);
+    }
+
     @PutMapping("/seedlings/{id}")
     public SeedlingResponse update(
             @AuthenticationPrincipal AuthenticatedUser user,
@@ -67,6 +95,15 @@ public class SeedlingController {
             @Valid @RequestBody SeedlingUpdateRequest request
     ) {
         return seedlingService.update(user.id(), id, request);
+    }
+
+    @PutMapping("/seedlings/{id}/quantity")
+    public SeedlingResponse adjustQuantity(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long id,
+            @Valid @RequestBody QuantityAdjustmentRequest request
+    ) {
+        return seedlingService.adjustQuantity(user.id(), id, request);
     }
 
     @DeleteMapping("/seedlings/{id}")

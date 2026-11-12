@@ -50,6 +50,9 @@ public class CropSheet {
     private Month harvestEndMonth;
 
     private Integer wateringFrequencyDays;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "catalog_crop_id")
+    private CatalogCrop catalogCrop;
 
     @Enumerated(EnumType.STRING)
     private SunExposure sunExposure;
@@ -147,6 +150,14 @@ public class CropSheet {
 
     public void setWateringFrequencyDays(Integer wateringFrequencyDays) {
         this.wateringFrequencyDays = wateringFrequencyDays;
+    }
+
+    public CatalogCrop getCatalogCrop() {
+        return catalogCrop;
+    }
+
+    public void setCatalogCrop(CatalogCrop catalogCrop) {
+        this.catalogCrop = catalogCrop;
     }
 
     public SunExposure getSunExposure() {

@@ -1,6 +1,9 @@
 package com.olalla.plantplan.controller;
 
+import com.olalla.plantplan.dto.QuantityAdjustmentRequest;
 import com.olalla.plantplan.dto.CropCreateRequest;
+import com.olalla.plantplan.dto.CropEntryRequest;
+import com.olalla.plantplan.dto.CropEntryResponse;
 import com.olalla.plantplan.dto.CropResponse;
 import com.olalla.plantplan.dto.CropUpdateRequest;
 import com.olalla.plantplan.security.AuthenticatedUser;
@@ -68,6 +71,13 @@ public class CropController {
         return cropService.create(user.id(), request);
     }
 
+    @PostMapping("/crops/entry")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CropEntryResponse registerPlanting(@AuthenticationPrincipal AuthenticatedUser user,
+                                              @Valid @RequestBody CropEntryRequest request) {
+        return cropService.registerPlanting(user.id(), request);
+    }
+
     @PutMapping("/crops/{id}")
     public CropResponse update(
             @AuthenticationPrincipal AuthenticatedUser user,
@@ -75,6 +85,15 @@ public class CropController {
             @Valid @RequestBody CropUpdateRequest request
     ) {
         return cropService.update(user.id(), id, request);
+    }
+
+    @PutMapping("/crops/{id}/quantity")
+    public CropResponse adjustQuantity(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long id,
+            @Valid @RequestBody QuantityAdjustmentRequest request
+    ) {
+        return cropService.adjustQuantity(user.id(), id, request);
     }
 
     @DeleteMapping("/crops/{id}")

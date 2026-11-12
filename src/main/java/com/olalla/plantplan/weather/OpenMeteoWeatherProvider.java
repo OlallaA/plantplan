@@ -21,7 +21,7 @@ import java.util.List;
 public class OpenMeteoWeatherProvider implements WeatherProvider {
 
     private static final String CURRENT_VARS =
-            "temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m";
+            "temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,is_day";
     private static final String DAILY_VARS =
             "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max";
 
@@ -71,7 +71,8 @@ public class OpenMeteoWeatherProvider implements WeatherProvider {
                 current.precipitation(),
                 current.weatherCode(),
                 WmoWeatherCodes.describe(current.weatherCode()),
-                current.windSpeed10m()
+                current.windSpeed10m(),
+                current.isDay() == null ? null : current.isDay() == 1
         );
 
         Daily daily = response.daily();
@@ -136,7 +137,8 @@ public class OpenMeteoWeatherProvider implements WeatherProvider {
             @JsonProperty("relative_humidity_2m") Integer relativeHumidity2m,
             Double precipitation,
             @JsonProperty("weather_code") Integer weatherCode,
-            @JsonProperty("wind_speed_10m") Double windSpeed10m
+            @JsonProperty("wind_speed_10m") Double windSpeed10m,
+            @JsonProperty("is_day") Integer isDay
     ) {
     }
 
